@@ -1,0 +1,219 @@
+@page "/"
+@inject ExpenseService ExpSvc
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Dashboard – FinTrack</PageTitle>
+
+@if (!AppState.IsLoggedIn)
+{
+    Nav.NavigateTo("/login");
+    return;
+}
+
+<div class="page-header mb-4">
+    <h1 class="fw-bold mb-1">Dashboard</h1>
+    <p class="text-muted mb-0">@DateTime.Now.ToString("MMMM yyyy") Overview</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="stat-label">Total Spent</p>
+                        <h3 class="stat-value text-danger">$@_totalSpent.ToString("N2")</h3>
+                    </div>
+                    <div class="stat-icon bg-danger-subtle text-danger">
+                        <i class="bi bi-graph-down-arrow"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="stat-label">Total Budget</p>
+                        <h3 class="stat-value text-primary">$@_totalBudget.ToString("N2")</h3>
+                    </div>
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-piggy-bank"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="stat-label">Remaining</p>
+                        <h3 class="stat-value @(_remaining >= 0 ? "text-success" : "text-danger")">
+                            $@_remaining.ToString("N2")
+                        </h3>
+                    </div>
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-wallet"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="stat-label">Transactions</p>
+                        <h3 class="stat-value text-info">@_expenses.Count</h3>
+                    </div>
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h6 class="fw-semibold mb-0">Spending by Category</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <div style="max-width:280px; width:100%">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h6 class="fw-semibold mb-0">Daily Spending – @DateTime.Now.ToString("MMMM")</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" style="max-height:220px"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Progress -->
+@if (_budgets.Any())
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 pt-3">
+            <h6 class="fw-semibold mb-0">Budget vs. Spending</h6>
+        </div>
+        <div class="card-body">
+            @foreach (var b in _budgets)
+            {
+                var spent = _expenses.Where(e => e.Category == b.Category).Sum(e => e.Amount);
+                var pct = b.MonthlyLimit > 0 ? (double)(spent / b.MonthlyLimit * 100) : 0;
+                var colorClass = pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success";
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-medium">@b.Category</span>
+                        <span class="text-muted small">$@spent.ToString("N0") / $@b.MonthlyLimit.ToString("N0")</span>
+                    </div>
+                    <div class="progress" style="height:8px">
+                        <div class="progress-bar @colorClass" style="width:@(Math.Min(pct,100))%"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Recent Transactions -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+        <h6 class="fw-semibold mb-0">Recent Transactions</h6>
+        <a href="/expenses" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+        @if (!_expenses.Any())
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-2"></i>
+                <p class="mt-2">No expenses this month. <a href="/expenses">Add one!</a></p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in _expenses.Take(8))
+                        {
+                            <tr>
+                                <td class="fw-medium">@e.Title</td>
+                                <td><span class="badge bg-secondary-subtle text-secondary rounded-pill">@e.Category</span></td>
+                                <td class="text-muted small">@e.Date.ToString("MMM d")</td>
+                                <td class="text-end fw-semibold text-danger">-$@e.Amount.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Expense> _expenses = new();
+    private List<BudgetLimit> _budgets = new();
+    private decimal _totalSpent, _totalBudget, _remaining;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AppState.IsLoggedIn) return;
+        var now = DateTime.Now;
+        _expenses = await ExpSvc.GetExpensesAsync(AppState.CurrentUser!.Id, now.Month, now.Year);
+        _budgets = await ExpSvc.GetBudgetsAsync(AppState.CurrentUser.Id, now.Month, now.Year);
+        _totalSpent = _expenses.Sum(e => e.Amount);
+        _totalBudget = _budgets.Sum(b => b.MonthlyLimit);
+        _remaining = _totalBudget - _totalSpent;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AppState.IsLoggedIn)
+            await RenderCharts();
+    }
+
+    private async Task RenderCharts()
+    {
+        var cats = ExpenseService.Categories;
+        var catAmounts = cats.Select(c => (double)_expenses.Where(e => e.Category == c).Sum(e => e.Amount)).ToArray();
+
+        var daysInMonth = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
+        var dailyAmounts = Enumerable.Range(1, daysInMonth)
+            .Select(d => (double)_expenses.Where(e => e.Date.Day == d).Sum(e => e.Amount))
+            .ToArray();
+
+        await JS.InvokeVoidAsync("renderCategoryChart", "categoryChart", cats, catAmounts);
+        await JS.InvokeVoidAsync("renderDailyChart", "dailyChart",
+            Enumerable.Range(1, daysInMonth).Select(d => d.ToString()).ToArray(),
+            dailyAmounts);
+    }
+}

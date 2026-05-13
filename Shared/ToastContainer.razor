@@ -1,0 +1,64 @@
+@implements IDisposable
+
+<!-- Toast Notification Container (in-app notification feature) -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:9999">
+    @foreach (var toast in _toasts)
+    {
+        <div class="toast show mb-2 @GetBgClass(toast.Type)" role="alert">
+            <div class="toast-header @GetHeaderClass(toast.Type) text-white border-0">
+                <i class="bi @GetIcon(toast.Type) me-2"></i>
+                <strong class="me-auto">@GetTitle(toast.Type)</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => Remove(toast.Id)"></button>
+            </div>
+            <div class="toast-body bg-white">
+                @toast.Message
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ToastMessage> _toasts = new();
+
+    protected override void OnInitialized()
+        => Toast.OnShow += OnToastReceived;
+
+    private async void OnToastReceived(ToastMessage msg)
+    {
+        _toasts.Add(msg);
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(4000);
+        Remove(msg.Id);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void Remove(Guid id) => _toasts.RemoveAll(t => t.Id == id);
+
+    private string GetBgClass(ToastType t) => t switch
+    {
+        ToastType.Success => "border-success",
+        ToastType.Error => "border-danger",
+        ToastType.Warning => "border-warning",
+        _ => "border-info"
+    };
+
+    private string GetHeaderClass(ToastType t) => t switch
+    {
+        ToastType.Success => "bg-success",
+        ToastType.Error => "bg-danger",
+        ToastType.Warning => "bg-warning",
+        _ => "bg-info"
+    };
+
+    private string GetIcon(ToastType t) => t switch
+    {
+        ToastType.Success => "bi-check-circle-fill",
+        ToastType.Error => "bi-x-circle-fill",
+        ToastType.Warning => "bi-exclamation-triangle-fill",
+        _ => "bi-info-circle-fill"
+    };
+
+    private string GetTitle(ToastType t) => t.ToString();
+
+    public void Dispose() => Toast.OnShow -= OnToastReceived;
+}

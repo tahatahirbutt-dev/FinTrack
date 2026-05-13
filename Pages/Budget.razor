@@ -1,0 +1,132 @@
+@page "/budget"
+@inject ExpenseService ExpSvc
+@inject NavigationManager Nav
+
+<PageTitle>Budget – FinTrack</PageTitle>
+
+@if (!AppState.IsLoggedIn) { Nav.NavigateTo("/login"); return; }
+
+<div class="page-header mb-4">
+    <h1 class="fw-bold mb-1">Monthly Budget</h1>
+    <p class="text-muted mb-0">Set spending limits per category for @(new DateTime(_year, _month, 1).ToString("MMMM yyyy"))</p>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-sm-4">
+                <label class="form-label small fw-medium">Month</label>
+                <select class="form-select form-select-sm" @bind="_month">
+                    @for (int m = 1; m <= 12; m++) {
+                        <option value="@m">@(new DateTime(2000, m, 1).ToString("MMMM"))</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label small fw-medium">Year</label>
+                <select class="form-select form-select-sm" @bind="_year">
+                    @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 2; y--) {
+                        <option value="@y">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <button class="btn btn-primary btn-sm" @onclick="LoadData">Load</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    @foreach (var cat in ExpenseService.Categories)
+    {
+        var budget = _budgets.FirstOrDefault(b => b.Category == cat);
+        var spent = _expenses.Where(e => e.Category == cat).Sum(e => e.Amount);
+        var limit = budget?.MonthlyLimit ?? 0;
+        var pct = limit > 0 ? (double)(spent / limit * 100) : 0;
+        var barClass = pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success";
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">@cat</h6>
+                        <span class="badge @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning text-dark" : "bg-success")">
+                            @pct.ToString("N0")%
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span>Spent: <strong class="text-dark">$@spent.ToString("N2")</strong></span>
+                        <span>Limit: <strong class="text-dark">$@limit.ToString("N2")</strong></span>
+                    </div>
+                    <div class="progress mb-3" style="height:8px">
+                        <div class="progress-bar @barClass" style="width:@(Math.Min(pct, 100))%"></div>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input class="form-control" type="number" step="10" min="0"
+                               placeholder="Set limit" @bind="_limits[cat]" />
+                        <button class="btn btn-outline-primary" @onclick="() => SaveBudget(cat)">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <span class="text-muted">Total Budgeted:</span>
+            <strong class="ms-2 text-primary fs-5">$@_budgets.Sum(b => b.MonthlyLimit).ToString("N2")</strong>
+        </div>
+        <div>
+            <span class="text-muted">Total Spent:</span>
+            <strong class="ms-2 text-danger fs-5">$@_expenses.Sum(e => e.Amount).ToString("N2")</strong>
+        </div>
+        <div>
+            <span class="text-muted">Remaining:</span>
+            @{ var rem = _budgets.Sum(b => b.MonthlyLimit) - _expenses.Sum(e => e.Amount); }
+            <strong class="ms-2 fs-5 @(rem >= 0 ? "text-success" : "text-danger")">$@rem.ToString("N2")</strong>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int _month = DateTime.Now.Month;
+    private int _year = DateTime.Now.Year;
+    private List<BudgetLimit> _budgets = new();
+    private List<Expense> _expenses = new();
+    private Dictionary<string, decimal> _limits = new();
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _budgets = await ExpSvc.GetBudgetsAsync(AppState.CurrentUser!.Id, _month, _year);
+        _expenses = await ExpSvc.GetExpensesAsync(AppState.CurrentUser.Id, _month, _year);
+        _limits = new Dictionary<string, decimal>();
+        foreach (var cat in ExpenseService.Categories)
+        {
+            var b = _budgets.FirstOrDefault(x => x.Category == cat);
+            _limits[cat] = b?.MonthlyLimit ?? 0;
+        }
+        StateHasChanged();
+    }
+
+    private async Task SaveBudget(string category)
+    {
+        await ExpSvc.SetBudgetAsync(new BudgetLimit
+        {
+            UserId = AppState.CurrentUser!.Id,
+            Category = category,
+            MonthlyLimit = _limits[category],
+            Month = _month,
+            Year = _year
+        });
+        Toast.ShowSuccess($"{category} budget updated!");
+        await LoadData();
+    }
+}

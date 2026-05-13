@@ -1,0 +1,169 @@
+@page "/currency"
+@inject CurrencyService CurrSvc
+@inject NavigationManager Nav
+
+<PageTitle>Currency Converter – FinTrack</PageTitle>
+
+@if (!AppState.IsLoggedIn) { Nav.NavigateTo("/login"); return; }
+
+<div class="page-header mb-4">
+    <h1 class="fw-bold mb-1">Currency Converter</h1>
+    <p class="text-muted mb-0">Live exchange rates via Open Exchange Rates API</p>
+</div>
+
+<div class="row g-4">
+    <!-- Converter card -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3">Convert Currency</h6>
+
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Amount</label>
+                    <input class="form-control form-control-lg" type="number" min="0" step="0.01"
+                           @bind="_amount" placeholder="Enter amount" />
+                </div>
+
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <label class="form-label fw-medium">From</label>
+                        <select class="form-select" @bind="_fromCurrency">
+                            @foreach (var c in CurrencyService.SupportedCurrencies)
+                            {
+                                <option value="@c">@c</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-medium">To</label>
+                        <select class="form-select" @bind="_toCurrency">
+                            @foreach (var c in CurrencyService.SupportedCurrencies)
+                            {
+                                <option value="@c">@c</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary w-100 py-2" @onclick="Convert" disabled="@_loading">
+                    @if (_loading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    <i class="bi bi-currency-exchange me-2"></i>Convert
+                </button>
+
+                @if (_result.HasValue)
+                {
+                    <div class="mt-4 p-3 bg-success-subtle rounded-3 text-center">
+                        <p class="text-muted small mb-1">@_amount @_fromCurrency equals</p>
+                        <h3 class="fw-bold text-success mb-1">@_result.Value.ToString("N4") @_toCurrency</h3>
+                        <p class="text-muted small mb-0">Rate: 1 @_fromCurrency = @_rate.ToString("N6") @_toCurrency</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-danger mt-3">@_error</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Rates Table -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">Live Rates (base: USD)</h6>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="LoadRates" disabled="@_loadingRates">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+            </div>
+            <div class="card-body p-0">
+                @if (_loadingRates)
+                {
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary spinner-border-sm"></div>
+                        <p class="text-muted small mt-2">Fetching live rates...</p>
+                    </div>
+                }
+                else if (_rates == null)
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-wifi-off fs-2"></i>
+                        <p class="mt-2">Could not load rates. Check your connection.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Currency</th>
+                                    <th class="text-end">Rate (per USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in CurrencyService.SupportedCurrencies.Where(c => c != "USD"))
+                                {
+                                    if (_rates.TryGetValue(c, out var rate))
+                                    {
+                                        <tr>
+                                            <td><span class="fw-medium">@c</span></td>
+                                            <td class="text-end text-muted">@rate.ToString("N4")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-muted text-center small py-2 mb-0">
+                        Last updated: @_lastUpdated?.ToString("HH:mm:ss")
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private decimal _amount = 1;
+    private string _fromCurrency = "USD";
+    private string _toCurrency = "PKR";
+    private decimal? _result;
+    private decimal _rate;
+    private string _error = string.Empty;
+    private bool _loading = false;
+    private bool _loadingRates = true;
+    private Dictionary<string, decimal>? _rates;
+    private DateTime? _lastUpdated;
+
+    protected override async Task OnInitializedAsync() => await LoadRates();
+
+    private async Task LoadRates()
+    {
+        _loadingRates = true;
+        _rates = await CurrSvc.GetRatesAsync("USD");
+        _lastUpdated = DateTime.Now;
+        _loadingRates = false;
+    }
+
+    private async Task Convert()
+    {
+        _error = string.Empty;
+        _result = null;
+        _loading = true;
+
+        var rates = await CurrSvc.GetRatesAsync(_fromCurrency);
+        _loading = false;
+
+        if (rates == null || !rates.TryGetValue(_toCurrency, out _rate))
+        {
+            _error = "Could not fetch exchange rates. Please try again.";
+            return;
+        }
+
+        _result = _amount * _rate;
+    }
+}

@@ -1,0 +1,153 @@
+/* ================================
+   FinTrack – Custom Styles
+   ================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fb;
+    color: #1e293b;
+}
+
+/* ── Sidebar ───────────────────── */
+.sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: #1e1b4b;
+    color: #c7d2fe;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.sidebar-brand {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    padding: 0.25rem 0;
+}
+
+.sidebar-link {
+    color: #a5b4fc !important;
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem !important;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+.avatar-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #4f46e5;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+/* ── Main Content ──────────────── */
+.main-content {
+    background: #f8f9fb;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ── Stat Cards ────────────────── */
+.stat-card {
+    border-radius: 16px;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+}
+
+.stat-label {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+.stat-value { font-size: 1.6rem; font-weight: 700; margin: 0; }
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+/* ── Cards ─────────────────────── */
+.card { border-radius: 16px; }
+.card-header { border-radius: 16px 16px 0 0 !important; }
+
+/* ── Auth ───────────────────────── */
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
+    padding: 1.5rem;
+}
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 20px !important;
+}
+
+/* ── Page Header ───────────────── */
+.page-header h1 { font-size: 1.8rem; }
+
+/* ── Tables ─────────────────────── */
+.table { font-size: 0.9rem; }
+.table thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+/* ── Progress Bars ──────────────── */
+.progress { border-radius: 999px; background-color: #e2e8f0; }
+.progress-bar { border-radius: 999px; }
+
+/* ── Modal backdrop fix ─────────── */
+.modal-backdrop.show { opacity: 0.5; }
+
+/* ── Responsive: collapse sidebar on small screens ── */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 64px;
+    }
+    .sidebar-brand span,
+    .sidebar-link span,
+    .sidebar-footer .fw-semibold,
+    .sidebar-footer .text-secondary,
+    .sidebar-footer button {
+        display: none;
+    }
+    .sidebar-link { padding: 0.6rem !important; justify-content: center; }
+}
