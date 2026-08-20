@@ -210,7 +210,15 @@
     private string _formError = string.Empty;
     private Expense? _deleteTarget;
 
-    protected override async Task OnInitializedAsync() => await LoadExpenses();
+    protected override async Task OnInitializedAsync()
+    {
+        if (AppState.CurrentUser is null)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        await LoadExpenses();
+    }
 
     private async Task LoadExpenses()
     {

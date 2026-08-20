@@ -139,7 +139,15 @@
     private Dictionary<string, decimal>? _rates;
     private DateTime? _lastUpdated;
 
-    protected override async Task OnInitializedAsync() => await LoadRates();
+    protected override async Task OnInitializedAsync()
+    {
+        if (AppState.CurrentUser is null)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        await LoadRates();
+    }
 
     private async Task LoadRates()
     {

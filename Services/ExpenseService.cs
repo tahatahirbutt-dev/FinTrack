@@ -12,7 +12,7 @@ public class ExpenseService
 
     public async Task<List<Expense>> GetExpensesAsync(int userId, int? month = null, int? year = null)
     {
-        var query = _db.Expenses.Where(e => e.UserId == userId);
+        var query = _db.Expenses.AsNoTracking().Where(e => e.UserId == userId);
 
         if (month.HasValue && year.HasValue)
             query = query.Where(e => e.Date.Month == month && e.Date.Year == year);
@@ -43,7 +43,7 @@ public class ExpenseService
     }
 
     public async Task<List<BudgetLimit>> GetBudgetsAsync(int userId, int month, int year)
-        => await _db.Budgets
+        => await _db.Budgets.AsNoTracking()
             .Where(b => b.UserId == userId && b.Month == month && b.Year == year)
             .ToListAsync();
 

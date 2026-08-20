@@ -101,7 +101,15 @@
     private List<Expense> _expenses = new();
     private Dictionary<string, decimal> _limits = new();
 
-    protected override async Task OnInitializedAsync() => await LoadData();
+    protected override async Task OnInitializedAsync()
+    {
+        if (AppState.CurrentUser is null)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        await LoadData();
+    }
 
     private async Task LoadData()
     {

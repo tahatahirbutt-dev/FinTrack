@@ -186,9 +186,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!AppState.IsLoggedIn) return;
+        if (AppState.CurrentUser is null)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
         var now = DateTime.Now;
-        _expenses = await ExpSvc.GetExpensesAsync(AppState.CurrentUser!.Id, now.Month, now.Year);
+        _expenses = await ExpSvc.GetExpensesAsync(AppState.CurrentUser.Id, now.Month, now.Year);
         _budgets = await ExpSvc.GetBudgetsAsync(AppState.CurrentUser.Id, now.Month, now.Year);
         _totalSpent = _expenses.Sum(e => e.Amount);
         _totalBudget = _budgets.Sum(b => b.MonthlyLimit);
