@@ -28,7 +28,7 @@ Spend summary, category breakdown, and daily spending across the month.
 
 ### Budget Alerts
 
-Progress bars shift **green → yellow → red** as a category approaches and exceeds its limit. Here: Transport and Utilities are healthy, Entertainment is at 89% (yellow), and Food, Health and Education are over budget (red).
+Progress bars shift **green → yellow → red** as a category approaches and exceeds its limit. Here: Transport, Shopping and Utilities are healthy, Entertainment is at 89% (yellow), and Food, Health and Education are over budget (red).
 
 ![Budget vs spending](docs/screenshots/dashboard-budgets.png)
 
