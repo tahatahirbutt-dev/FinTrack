@@ -1,147 +1,184 @@
-# FinTrack – Personal Finance & Budget Tracker
-> Visual Programming Project | Blazor Server | .NET 8
+# FinTrack — Personal Finance & Budget Tracker
 
-## 📋 Project Checklist (All Requirements Met)
+**A Blazor Server application for tracking expenses, setting monthly category budgets, and converting currency against live exchange rates. Built on .NET 8 with Entity Framework Core and SQLite.**
 
-| Requirement | Implementation |
-|---|---|
-| ✅ User Authentication | Custom email/password with BCrypt hashing |
-| ✅ External API | Open Exchange Rates API (no key needed) |
-| ✅ Local Database | SQLite via Entity Framework Core |
-| ✅ Modern Web Feature | In-app Toast notifications + Chart.js |
-| ✅ Responsive UI/UX | Bootstrap 5 + custom CSS, sidebar layout |
-| ✅ Component-based | Razor components, DI, scoped services |
-| ✅ State Management | AppState scoped service (cascading pattern) |
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)
+![Blazor](https://img.shields.io/badge/Blazor-Server-5C2D91)
+![EF Core](https://img.shields.io/badge/EF%20Core-SQLite-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
-## 🚀 Quick Setup (5 Minutes)
+## Overview
 
-### Prerequisites
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- Visual Studio 2022 or VS Code
+FinTrack answers three questions a person actually has about their money: where
+did it go, am I over budget, and what is this worth in another currency.
 
-### Steps
+It's a full-stack Blazor Server application — authentication, persistent
+storage, an analytics dashboard, and a live external API integration — built as
+a university Visual Programming project and developed end to end by me.
 
-```bash
-# 1. Clone or open the project
-cd FinTrack
+### Screenshots
 
-# 2. Restore packages
-dotnet restore
+**Dashboard** — spend summary, category breakdown and daily spending
 
-# 3. Run the app (DB is auto-created on first run)
-dotnet run
+![Dashboard](docs/screenshots/dashboard.png)
 
-# 4. Open in browser
-# https://localhost:5001  OR  http://localhost:5000
-```
+**Budget vs. spending and recent transactions**
 
-> **No migrations needed** — `EnsureCreated()` in `Program.cs` auto-creates `fintrack.db` on first run.
+![Budget progress](docs/screenshots/dashboard-budgets.png)
+
+| Expenses | Monthly budgets | Currency converter |
+|---|---|---|
+| ![Expenses](docs/screenshots/expenses.png) | ![Budget](docs/screenshots/budget.png) | ![Currency](docs/screenshots/currency.png) |
 
 ---
 
-## 🗂️ Project Structure
+## Features
+
+### Authentication
+Custom email/password registration and login. Passwords are hashed with
+**BCrypt** and never stored in plain text. Session state is held in a scoped
+`AppState` service and shared down the component tree using Blazor's
+cascading-value pattern.
+
+### Dashboard
+- Summary cards: total spent, total budgeted, remaining, transaction count
+- **Doughnut chart** — spending by category
+- **Bar chart** — daily spending across the current month
+- Budget progress bars that shift green → yellow → red as a category's limit
+  is approached
+- Recent transactions table
+
+Both charts are rendered with Chart.js through Blazor's **JavaScript interop**,
+since Chart.js is a JS library with no native Blazor equivalent in this project.
+
+### Expenses
+Full CRUD — add, edit and delete expenses — with filtering by month, year and
+category, and a confirmation dialog before any destructive action.
+
+### Budgets
+Monthly spending limits set per category, with visual progress indicators and a
+remaining-budget summary.
+
+### Currency Converter
+Live rates pulled from the **Open Exchange Rates API** (`open.er-api.com`),
+converting between 12 major currencies including PKR, USD, EUR and GBP. The
+endpoint requires no API key, so the feature works on a fresh clone with no
+configuration.
+
+### Toast Notifications
+In-app success/error/warning/info toasts with auto-dismiss after 4 seconds,
+driven by a scoped `ToastService` and a shared `ToastContainer` component.
+
+---
+
+## Architecture
 
 ```
 FinTrack/
 ├── Data/
-│   └── AppDbContext.cs          # EF Core SQLite context
+│   └── AppDbContext.cs        # EF Core DbContext (SQLite)
 ├── Models/
-│   └── Models.cs                # User, Expense, Budget entities
+│   └── Models.cs              # User, Expense, Budget entities
 ├── Services/
-│   ├── AuthService.cs           # Register/Login with BCrypt
-│   ├── AppState.cs              # Session state (logged-in user)
-│   ├── ExpenseService.cs        # CRUD for expenses & budgets
-│   ├── CurrencyService.cs       # External API (Exchange Rates)
-│   └── ToastService.cs          # In-app notifications
+│   ├── AuthService.cs         # Registration & login, BCrypt hashing
+│   ├── AppState.cs            # Scoped session state
+│   ├── ExpenseService.cs      # Expense & budget CRUD
+│   ├── CurrencyService.cs     # External exchange-rate API client
+│   └── ToastService.cs        # Notification queue
 ├── Pages/
-│   ├── _Host.cshtml             # Blazor Server entry point
-│   ├── _Layout.cshtml           # HTML shell (Bootstrap, Chart.js CDN)
-│   ├── Login.razor              # Login page
-│   ├── Register.razor           # Registration page
-│   ├── Dashboard.razor          # Charts + summary + recent expenses
-│   ├── Expenses.razor           # Full CRUD expense management
-│   ├── Budget.razor             # Monthly budget per category
-│   └── Currency.razor           # Live currency converter
+│   ├── _Host.cshtml           # Blazor Server entry point
+│   ├── _Layout.cshtml         # HTML shell (Bootstrap, Chart.js)
+│   ├── Login.razor
+│   ├── Register.razor
+│   ├── Dashboard.razor
+│   ├── Expenses.razor
+│   ├── Budget.razor
+│   └── Currency.razor
 ├── Shared/
-│   ├── MainLayout.razor         # Sidebar layout
-│   └── ToastContainer.razor     # Toast notification container
+│   ├── MainLayout.razor       # Sidebar layout
+│   └── ToastContainer.razor
 ├── wwwroot/
-│   ├── css/app.css              # Custom styles
-│   └── js/charts.js             # Chart.js interop functions
-├── Program.cs                   # App setup & DI
-└── FinTrack.csproj
+│   ├── css/app.css
+│   └── js/charts.js           # Chart.js interop functions
+└── Program.cs                 # DI registration & app setup
 ```
 
----
+**Design decisions worth naming:**
 
-## ✨ Features
-
-### 🔐 Authentication
-- Register with name, email, password
-- Passwords hashed with BCrypt (never stored as plain text)
-- Session state via `AppState` scoped service
-
-### 📊 Dashboard
-- Total spent / budgeted / remaining stat cards
-- **Doughnut chart** – spending by category (Chart.js via JS interop)
-- **Bar chart** – daily spending for the month
-- Budget progress bars (green/yellow/red based on usage)
-- Recent transactions table
-
-### 🧾 Expenses
-- Add, edit, delete expenses
-- Filter by month, year, and category
-- Confirmation dialog before delete
-
-### 💰 Budget
-- Set monthly spending limits per category
-- Visual progress bars with color alerts
-- Shows remaining budget summary
-
-### 💱 Currency Converter (External API)
-- Live rates from `open.er-api.com` (free, no API key)
-- Convert between 12 major currencies including PKR, USD, EUR, GBP
-- Live rates table with refresh button
-
-### 🔔 Toast Notifications
-- Success, error, warning, info styles
-- Auto-dismiss after 4 seconds
+- **Services, not code-behind.** All business logic lives in injected scoped
+  services rather than in the Razor components, so pages stay presentational and
+  logic is testable independently of the UI.
+- **Scoped state over static.** `AppState` is registered scoped, which in Blazor
+  Server means per-user-circuit — a static field would have leaked one user's
+  session into every other user's.
+- **`EnsureCreated()` over migrations.** The database is provisioned on first
+  run, so a clone works immediately with no migration step. See *Known
+  limitations* for the trade-off this makes.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Framework | Blazor Server (.NET 8) |
-| Database | SQLite + Entity Framework Core |
-| Auth | Custom (BCrypt.Net-Next) |
-| UI | Bootstrap 5 + Bootstrap Icons |
-| Charts | Chart.js 4 (CDN) |
-| API | Open Exchange Rates (RESTful, free) |
+| ORM | Entity Framework Core |
+| Database | SQLite |
+| Authentication | Custom, BCrypt.Net-Next |
+| UI | Bootstrap 5, Bootstrap Icons |
+| Charts | Chart.js 4 via JS interop |
+| External API | Open Exchange Rates (`open.er-api.com`) |
 | Font | Inter (Google Fonts) |
 
 ---
 
-## 👥 Team Task Division
+## Running It
 
-| Member | Tasks |
-|---|---|
-| Member 1 | Auth (Login/Register), AppState, AppDbContext, Models |
-| Member 2 | Dashboard (charts, stats), Currency Converter (API) |
-| Member 3 | Expenses CRUD, Budget page, Toast notifications, CSS |
+**Prerequisites:** .NET 8 SDK. Visual Studio 2022 or VS Code optional.
+
+```bash
+git clone https://github.com/tahatahirbutt-dev/FinTrack.git
+cd FinTrack
+dotnet restore
+dotnet run
+```
+
+Then open `https://localhost:5001` (or `http://localhost:5000`).
+
+No database setup and no migrations — `EnsureCreated()` in `Program.cs` builds
+`fintrack.db` on first run. Register a new account through the UI to get started.
 
 ---
 
-## 📝 Git Workflow
+## Known Limitations
 
-```bash
-# Feature branches
-git checkout -b feature/expenses-crud
-git checkout -b feature/currency-api
-git checkout -b feature/dashboard-charts
+Documented deliberately rather than left for a reader to discover:
 
-# Merge via pull request to main
-```
+- **`EnsureCreated()` instead of EF migrations.** This makes a fresh clone work
+  with zero setup, but it means the schema can't be versioned or evolved
+  incrementally — a schema change requires deleting the database. A production
+  version would use `dotnet ef migrations`.
+- **No automated tests.** The application was verified manually across
+  registration, expense CRUD, budget alerts and currency conversion. No unit or
+  integration test suite exists yet.
+- **Session state is not persistent.** `AppState` lives in the Blazor Server
+  circuit, so a page refresh or connection drop logs the user out. Persisting
+  authentication would require cookie or token-based auth.
+- **External API has no caching or rate-limit handling.** Every conversion hits
+  `open.er-api.com` directly. A production version would cache rates and degrade
+  gracefully when the API is unreachable.
+- **No multi-currency storage.** Expenses are stored in a single implicit
+  currency; the converter is a standalone utility rather than being wired into
+  expense records.
+
+---
+
+## License
+
+MIT License © 2026 Taha Tahir Butt
+
+---
+
+*Built and developed end to end by Taha Tahir Butt — Rawalpindi, Pakistan.*
